@@ -29,6 +29,41 @@ expr_creates_var <- function(correctName=NULL){
   return(results$passed)
 }
 
+
+
+## custom tests with smart hints
+smarttest <- function() {
+  
+  try({
+    func <- get('boring_function', globalenv())
+    ok <- identical(func(), 212.8)
+    
+  }, silent = TRUE)
+  if (exists('ok') && isTRUE(ok)) {
+    return(TRUE)
+  } else {
+    e <- get("e", parent.frame())
+    exp <- parse(e$script_temp_path)
+    print(eval(exp, e))
+    body <- exp[[1]][[3]][[3]]
+    lastStmt <- body[[length(body)]]
+    eval(body[[2]], e)
+    eval(body[[3]], e)
+    eval(body[[4]], e)
+    data <- eval(lastStmt[[2]], e)
+    smart_hint <- paste(c("Your last data: ", data), collapse = " " )
+    return(list(result=FALSE, hint=smart_hint))
+  }
+ # if(valGood){
+#    return(TRUE)
+ # } else {
+  #  e$delta <- list()
+   # print(e$vis)
+    #smart_hint <- "You are not very smart!"    
+   # return(list(result=FALSE, hint=smart_hint))
+  #}
+}
+
 omnitest <- function(correctExpr=NULL, correctVal=NULL, strict=FALSE){
   e <- get("e", parent.frame())
   # Trivial case
