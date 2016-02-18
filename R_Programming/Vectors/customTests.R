@@ -29,13 +29,18 @@ expr_creates_var <- function(correctName=NULL){
   return(results$passed)
 }
 
-
+#we are looking for a call to the mean function
+isTarget <- function(expression) {
+  if (is.call(expression)) {
+    return (expression[[1]] == "mean")
+  }
+  return (FALSE)
+}
 
 ## custom tests with smart hints
 smarttest <- function() {
-  
   try({
-    func <- get('boring_function', globalenv())
+    func <- get('yourFunction', globalenv())
     ok <- identical(func(), 212.8)
     
   }, silent = TRUE)
@@ -43,25 +48,25 @@ smarttest <- function() {
     return(TRUE)
   } else {
     e <- get("e", parent.frame())
+    #parse student submission
     exp <- parse(e$script_temp_path)
-    print(eval(exp, e))
+    #get the body of the method
     body <- exp[[1]][[3]][[3]]
-    lastStmt <- body[[length(body)]]
-    eval(body[[2]], e)
-    eval(body[[3]], e)
-    eval(body[[4]], e)
-    data <- eval(lastStmt[[2]], e)
-    smart_hint <- paste(c("Your last data: ", data), collapse = " " )
-    return(list(result=FALSE, hint=smart_hint))
+    for (i in seq_along(body)) {
+      #get each statement and evaluate run it 
+      stmt <- body[[i]]
+      eval(stmt,e)
+      #if the statement is the target function of the 
+      #assignment, safe the data to use as hint 
+      if (isTarget(stmt)) {
+        meanFirstArg <- stmt[[2]]
+        userData <- eval(meanFirstArg,e)
+        #create the hint using the evaluated data
+        smart_hint <- paste(c("Your last data: ", userData), collapse = " " )
+      }
+    }
+    return(list(result=FALSE, hint= if (is.null(smart_hint)) NULL else smart_hint))
   }
- # if(valGood){
-#    return(TRUE)
- # } else {
-  #  e$delta <- list()
-   # print(e$vis)
-    #smart_hint <- "You are not very smart!"    
-   # return(list(result=FALSE, hint=smart_hint))
-  #}
 }
 
 omnitest <- function(correctExpr=NULL, correctVal=NULL, strict=FALSE){
